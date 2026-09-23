@@ -114,7 +114,7 @@ export const Sidebar: React.FC = () => {
 
           {/* Bull Board External Monitor Item */}
           <a
-            href="http://localhost:5000/admin/queues"
+            href={`${import.meta.env.VITE_API_URL}/admin/queues`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 text-[13px] font-medium text-[#434655] hover:bg-[#eff4ff] hover:text-[#0b1c30] rounded-lg px-3 py-2 transition-colors duration-150 ease-in-out"

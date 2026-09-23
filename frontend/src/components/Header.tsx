@@ -49,7 +49,7 @@ export const Header: React.FC = () => {
           <div className="flex items-center space-x-4">
             {/* Bull Board link */}
             <a
-              href="http://localhost:5000/admin/queues"
+              href={`${import.meta.env.VITE_API_URL}/admin/queues`}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:flex items-center text-xs font-semibold text-gray-600 hover:text-brand-600 bg-gray-100 hover:bg-brand-50 px-3 py-1.5 rounded-lg border border-gray-200 transition"
