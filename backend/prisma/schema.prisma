@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum CampaignStatus {
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ScheduledEmailStatus {
+  SCHEDULED
+  PROCESSING
+  SENT
+  FAILED
+  RESCHEDULED
+}
+
+model User {
+  id               String     @id @default(cuid())
+  googleId         String?    @unique
+  name             String
+  email            String     @unique
+  avatarUrl        String?
+  slackAccessToken String?
+  slackChannelId   String?
+  slackWebhookUrl  String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  senders          Sender[]
+  campaigns        Campaign[]
+
+  @@map("users")
+}
+
+model Sender {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  smtpHost     String
+  smtpPort     Int
+  smtpUser     String
+  smtpPassword String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  scheduledEmails ScheduledEmail[]
+
+  @@index([userId])
+  @@map("senders")
+}
+
+model Campaign {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  startTime    DateTime
+  delaySeconds Int            @default(2)
+  hourlyLimit  Int            @default(100)
+  status       CampaignStatus @default(SCHEDULED)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  scheduledEmails ScheduledEmail[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("campaigns")
+}
+
+model ScheduledEmail {
+  id             String               @id @default(cuid())
+  campaignId     String
+  campaign       Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         Sender               @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  recipient      String
+  subject        String
+  body           String               @db.Text
+  scheduledAt    DateTime
+  sentAt         DateTime?
+  status         ScheduledEmailStatus @default(SCHEDULED)
+  errorMessage   String?              @db.Text
+  idempotencyKey String               @unique
+  bullJobId      String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([campaignId])
+  @@index([senderId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([idempotencyKey])
+  @@map("scheduled_emails")
+}
