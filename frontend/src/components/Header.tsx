@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, PlusCircle, LogOut, ExternalLink, Slack, CheckCircle, AlertCircle } from 'lucide-react';
-import api from '../services/api';
+import api, { BULL_BOARD_URL } from '../services/api';
 
 export const Header: React.FC = () => {
   const { user, logout, slackStatus, refreshSlackStatus } = useAuth();
@@ -49,7 +49,7 @@ export const Header: React.FC = () => {
           <div className="flex items-center space-x-4">
             {/* Bull Board link */}
             <a
-              href={`${import.meta.env.VITE_API_URL}/admin/queues`}
+              href={BULL_BOARD_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:flex items-center text-xs font-semibold text-gray-600 hover:text-brand-600 bg-gray-100 hover:bg-brand-50 px-3 py-1.5 rounded-lg border border-gray-200 transition"

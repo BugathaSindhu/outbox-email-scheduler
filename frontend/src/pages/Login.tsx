@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { GOOGLE_OAUTH_URL } from '../services/api';
 
 export const Login: React.FC = () => {
   const { user, loginWithToken, demoLogin } = useAuth();
@@ -18,7 +19,7 @@ export const Login: React.FC = () => {
   }, [searchParams, user]);
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`;
+    window.location.href = GOOGLE_OAUTH_URL;
   };
 
   const handleQuickDemoLogin = async () => {

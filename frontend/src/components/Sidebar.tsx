@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+import api, { BULL_BOARD_URL } from '../services/api';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -114,7 +114,7 @@ export const Sidebar: React.FC = () => {
 
           {/* Bull Board External Monitor Item */}
           <a
-            href={`${import.meta.env.VITE_API_URL}/admin/queues`}
+            href={BULL_BOARD_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 text-[13px] font-medium text-[#434655] hover:bg-[#eff4ff] hover:text-[#0b1c30] rounded-lg px-3 py-2 transition-colors duration-150 ease-in-out"
