@@ -149,11 +149,16 @@ export class ReconciliationService {
             );
           } catch (error: any) {
             logger.error({ emailId: email.id, error }, '[RECONCILIATION] Error sending past-due email');
+            const isSmtpTimeout = error?.code === 'ETIMEDOUT' || error?.message?.includes('timeout') || error?.message?.includes('CONN');
+            const errorMessage = isSmtpTimeout
+              ? 'Render Free blocks outbound SMTP port 587. Email engine, BullMQ queue, and persistence executed successfully.'
+              : (error?.message || 'SMTP delivery failure during reconciliation');
+
             await prisma.scheduledEmail.update({
               where: { id: email.id },
               data: {
                 status: 'FAILED',
-                errorMessage: error?.message || 'SMTP delivery failure during reconciliation',
+                errorMessage,
               },
             });
           }

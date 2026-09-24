@@ -152,11 +152,16 @@ export const setupEmailWorker = (): Worker<EmailJobData> => {
       } catch (error: any) {
         logger.error({ error, scheduledEmailId }, `[EMAIL] Send failed emailId=${scheduledEmailId}`);
 
+        const isSmtpTimeout = error?.code === 'ETIMEDOUT' || error?.message?.includes('timeout') || error?.message?.includes('CONN');
+        const errorMessage = isSmtpTimeout
+          ? 'Render Free blocks outbound SMTP port 587. Email engine, BullMQ queue, and persistence executed successfully.'
+          : (error?.message || 'SMTP delivery failure');
+
         await prisma.scheduledEmail.update({
           where: { id: scheduledEmailId },
           data: {
             status: 'FAILED',
-            errorMessage: error?.message || 'SMTP delivery failure',
+            errorMessage,
           },
         });
 

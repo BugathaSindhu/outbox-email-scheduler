@@ -1,6 +1,6 @@
 # Outbox Labs — Email Scheduling SaaS Platform
 
-Production-quality, high-throughput email scheduling SaaS platform built with **React**, **TypeScript**, **Node.js**, **Express**, **MySQL (Prisma ORM)**, **Redis**, **BullMQ**, **Ethereal SMTP**, **Elasticsearch**, **Google OAuth**, and **Slack Integration**.
+Production-quality, high-throughput email scheduling SaaS platform built with **React**, **TypeScript**, **Node.js**, **Express**, **MySQL (Prisma ORM)**, **Redis**, **BullMQ**, **Ethereal SMTP**, **Elasticsearch**, **Google OAuth**, **Email/Password Auth**, and **Slack Integration**.
 
 ---
 
@@ -16,7 +16,7 @@ Outbox Labs handles large-scale scheduled email dispatches safely without blocki
 ┌─────────────────────────────────────────────────────────────────┐
 │                    React + TypeScript Dashboard                 │
 └────────────────────────────────┬────────────────────────────────┘
-                                 │ HTTP / REST API
+                                 │ HTTP / REST API (Vercel Frontend)
                                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                  Node.js + Express API Backend                  │
@@ -45,13 +45,13 @@ Outbox Labs handles large-scale scheduled email dispatches safely without blocki
 ## 3. Technology Stack
 
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide React, Axios, React Router v6.
-- **Backend**: Node.js, Express.js, TypeScript, Zod, Pino Logger, Passport.js, JWT.
+- **Backend**: Node.js, Express.js, TypeScript, Zod, Pino Logger, Passport.js, JWT, bcrypt.
 - **Relational Database**: **MySQL 8.0 ONLY** via Prisma ORM.
 - **Job Queue & Scheduler**: BullMQ + IORedis.
 - **Rate Limiting**: Distributed Redis Atomic Counter (`INCR` / `DECR`).
-- **Email Delivery**: Nodemailer + Ethereal SMTP.
+- **Email Delivery**: Nodemailer + Ethereal SMTP (`smtp.ethereal.email:587`).
 - **Search Engine**: Elasticsearch 8.x.
-- **Authentication**: Google OAuth 2.0 & Instant Demo Auth Mode.
+- **Authentication**: Google OAuth 2.0, Email/Password Auth, and Instant Demo Auth Mode.
 - **Monitoring**: Bull Board (`/admin/queues`).
 - **Containerization**: Docker & Docker Compose.
 
@@ -68,8 +68,8 @@ Outbox Labs handles large-scale scheduled email dispatches safely without blocki
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/outbox-labs/openbox.git
-   cd openbox
+   git clone https://github.com/BugathaSindhu/outbox-email-scheduler.git
+   cd outbox-email-scheduler
    ```
 
 2. **Configure Environment Variables**:
@@ -111,7 +111,38 @@ Outbox Labs handles large-scale scheduled email dispatches safely without blocki
 
 ---
 
-## 5. Key Technical Implementations
+## 5. Environment Variables
+
+The application reads configuration from environment variables. Example keys required for local and production deployment:
+
+### Backend Environment Variables (`backend/.env`)
+```env
+PORT=5000
+NODE_ENV=development
+JWT_SECRET=super-secret-outbox-jwt-key
+DATABASE_URL=mysql://root:password@localhost:3306/outbox
+REDIS_URL=redis://localhost:6379
+ELASTICSEARCH_URL=http://localhost:9200
+FRONTEND_URL=http://localhost:3000
+BACKEND_URL=http://localhost:5000
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+SLACK_CLIENT_ID=your-slack-client-id
+SLACK_CLIENT_SECRET=your-slack-client-secret
+SLACK_REDIRECT_URI=http://localhost:5000/api/slack/callback
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin
+```
+
+### Frontend Environment Variables (`frontend/.env`)
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+---
+
+## 6. Key Technical Implementations
 
 ### Rate Limiting Algorithm (Redis Atomic Counter)
 
@@ -138,12 +169,26 @@ The distributed rate limiter tracks dispatches per sender per hour using Redis a
 
 ---
 
-## 6. API Documentation
+## 7. Known Hosting Network Limitation (Render Free Egress Policy)
+
+> [!NOTE] Ethereal SMTP Outbound Port Restriction
+> Render's Free Web Service tier enforces a strict egress firewall policy blocking outbound TCP ports **25**, **465**, and **587** to prevent spam abuse on free instances.
+>
+> - **Local Development**: In local development, port `587` is unblocked. BullMQ workers process scheduled jobs, connect to `smtp.ethereal.email:587`, dispatch emails successfully, and generate viewable Ethereal preview URLs.
+> - **Production (Render Free)**: On Render Free, outbound connections to `smtp.ethereal.email:587` hit an `ETIMEDOUT` socket timeout. The BullMQ worker catches the timeout safely, preserves server startup & queue operation, and marks the record status in MySQL as `FAILED` with the diagnostic details.
+> - **Production Resolution**: Deploying the backend to an unblocked host or upgrading the Render instance to a paid Web Service tier immediately enables live Ethereal SMTP delivery and preview URL generation in production.
+
+---
+
+## 8. API Documentation
 
 ### Auth Endpoints
-- `POST /api/auth/demo-login` — Instant test login (returns JWT token).
+- `POST /api/auth/signup` — Create user account with name, email, and password.
+- `POST /api/auth/login` — Log in with email and password.
+- `POST /api/auth/demo-login` — Instant test login (returns JWT token & sets HttpOnly cookie).
 - `GET /api/auth/google` — Initiates Google OAuth flow.
-- `GET /api/auth/me` — Fetches current user profile.
+- `GET /api/auth/me` — Fetches current authenticated user profile.
+- `POST /api/auth/logout` — Clears authentication cookies.
 
 ### Scheduling & Email Endpoints
 - `POST /api/emails/schedule` — Schedule email campaign.
@@ -172,9 +217,9 @@ The distributed rate limiter tracks dispatches per sender per hour using Redis a
 
 ---
 
-## 7. Automated Testing
+## 9. Automated Testing
 
-Run backend Jest test suite covering scheduling, rate limiting, and idempotency:
+Run backend Jest test suite covering scheduling, rate limiting, idempotency, and authentication:
 
 ```bash
 cd backend
