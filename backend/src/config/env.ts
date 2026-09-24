@@ -7,6 +7,12 @@ dotenv.config();
 const sanitizeSecret = (val?: string): string => {
   if (!val) return '';
   let str = String(val).trim();
+  if (str.includes('=')) {
+    const parts = str.split('=');
+    if (parts[0].match(/^[A-Z0-9_]+$/i)) {
+      str = parts.slice(1).join('=').trim();
+    }
+  }
   if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
     str = str.slice(1, -1).trim();
   }
@@ -33,9 +39,9 @@ export const config = {
   },
 
   google: {
-    clientId: process.env.GOOGLE_CLIENT_ID || '',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    callbackUrl: process.env.GOOGLE_CALLBACK_URL || (process.env.NODE_ENV === 'production' ? `${process.env.FRONTEND_URL || 'https://outbox-email-scheduler-omega.vercel.app'}/api/auth/google/callback` : 'http://localhost:5000/api/auth/google/callback'),
+    clientId: sanitizeSecret(process.env.GOOGLE_CLIENT_ID),
+    clientSecret: sanitizeSecret(process.env.GOOGLE_CLIENT_SECRET),
+    callbackUrl: sanitizeSecret(process.env.GOOGLE_CALLBACK_URL) || (process.env.NODE_ENV === 'production' ? `${process.env.FRONTEND_URL || 'https://outbox-email-scheduler-omega.vercel.app'}/api/auth/google/callback` : 'http://localhost:5000/api/auth/google/callback'),
   },
 
   slack: {
