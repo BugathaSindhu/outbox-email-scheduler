@@ -14,7 +14,7 @@ export class UserRepository {
     return prisma.user.findUnique({ where: { googleId } });
   }
 
-  async create(data: { googleId?: string; name: string; email: string; avatarUrl?: string }): Promise<User> {
+  async create(data: { googleId?: string; name: string; email: string; avatarUrl?: string; passwordHash?: string }): Promise<User> {
     return prisma.user.create({ data });
   }
 

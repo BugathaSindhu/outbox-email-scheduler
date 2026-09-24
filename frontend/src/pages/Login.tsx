@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { GOOGLE_OAUTH_URL } from '../services/api';
 
 export const Login: React.FC = () => {
-  const { user, loginWithToken, demoLogin, checkAuth } = useAuth();
+  const { user, login, loginWithToken, demoLogin, checkAuth } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [loadingDemo, setLoadingDemo] = useState(false);
 
   useEffect(() => {
@@ -22,18 +26,38 @@ export const Login: React.FC = () => {
     }
   }, [searchParams, user]);
 
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!email.trim() || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await login(email.trim(), password);
+      navigate('/dashboard');
+    } catch (err: any) {
+      const msg = err.response?.data?.error || 'Invalid email or password. Please try again.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLogin = () => {
     window.location.href = GOOGLE_OAUTH_URL;
   };
 
   const handleQuickDemoLogin = async () => {
     setLoadingDemo(true);
+    setError(null);
     try {
       await demoLogin('reviewer@outboxlabs.io', 'Evaluation User');
       navigate('/dashboard');
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Demo login is disabled or unavailable. Please use Google OAuth.';
-      alert(msg);
+      const msg = err.response?.data?.error || 'Demo login is disabled or unavailable. Please use Google OAuth or Email Login.';
+      setError(msg);
     } finally {
       setLoadingDemo(false);
     }
@@ -56,8 +80,65 @@ export const Login: React.FC = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="bg-[#213145]/90 backdrop-blur-md py-8 px-6 shadow-2xl rounded-xl border border-[#737686]/40 sm:px-10 space-y-4">
+          
+          {error && (
+            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">error</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Email / Password Login Form */}
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase text-[#c3c6d7] tracking-wider mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                className="w-full px-3 py-2.5 bg-[#0b1c30]/80 border border-[#737686]/40 rounded-lg text-white placeholder-[#737686] text-sm focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-[#c3c6d7] tracking-wider mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full px-3 py-2.5 bg-[#0b1c30]/80 border border-[#737686]/40 rounded-lg text-white placeholder-[#737686] text-sm focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-[#2563eb] hover:bg-[#004ac6] text-white rounded-lg font-semibold text-sm shadow-lg shadow-[#2563eb]/20 transition-colors duration-150 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? 'Logging in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#737686]/40" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-[#213145] px-3 text-[#c3c6d7] font-semibold">Or</span>
+            </div>
+          </div>
+
           {/* Google OAuth Button */}
           <button
+            type="button"
             onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-[#737686]/50 rounded-lg shadow-sm bg-[#0b1c30]/60 hover:bg-[#0b1c30] text-white font-medium text-sm transition-colors duration-150"
           >
@@ -82,34 +163,22 @@ export const Login: React.FC = () => {
             <span>Continue with Google OAuth</span>
           </button>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#737686]/40" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#213145] px-3 text-[#c3c6d7] font-semibold">Or Quick Reviewer Evaluation</span>
-            </div>
-          </div>
-
           {/* Quick Instant Demo Login Button */}
           <button
+            type="button"
             onClick={handleQuickDemoLogin}
             disabled={loadingDemo}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#2563eb] hover:bg-[#004ac6] text-white rounded-lg font-semibold text-sm shadow-lg shadow-[#2563eb]/20 transition-colors duration-150 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0b1c30]/40 hover:bg-[#0b1c30]/80 text-[#c3c6d7] hover:text-white border border-[#737686]/30 rounded-lg font-medium text-xs transition-colors duration-150 disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-[18px]">bolt</span>
-            <span>{loadingDemo ? 'Logging in...' : 'Instant Demo Login (No Setup Required)'}</span>
+            <span className="material-symbols-outlined text-[16px] text-amber-400">bolt</span>
+            <span>{loadingDemo ? 'Logging in...' : 'Instant Demo Login (Quick Review)'}</span>
           </button>
 
-          <div className="mt-6 pt-4 border-t border-[#737686]/40 text-[12px] text-[#c3c6d7] space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-emerald-400 text-sm">check_circle</span>
-              <span>BullMQ + Redis delayed queue scheduling engine</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-amber-400 text-sm">schedule</span>
-              <span>Atomic Redis rate limiter & restart persistence</span>
-            </div>
+          <div className="pt-2 text-center text-xs text-[#c3c6d7]">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-[#60a5fa] font-semibold hover:underline">
+              Sign Up
+            </Link>
           </div>
         </div>
       </div>

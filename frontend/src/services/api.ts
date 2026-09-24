@@ -17,25 +17,35 @@ const api = axios.create({
   },
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('outbox_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('outbox_token');
-      if (window.location.pathname !== '/login') {
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
         window.location.href = '/login';
       }
     }
     return Promise.reject(error);
   }
 );
+
+export const authApi = {
+  login: async (data: { email: string; password: string }) => {
+    const response = await api.post('/auth/login', data);
+    return response.data;
+  },
+  signup: async (data: { name: string; email: string; password: string }) => {
+    const response = await api.post('/auth/signup', data);
+    return response.data;
+  },
+  getMe: async () => {
+    const response = await api.get('/auth/me');
+    return response.data;
+  },
+  logout: async () => {
+    const response = await api.post('/auth/logout');
+    return response.data;
+  },
+};
 
 export default api;

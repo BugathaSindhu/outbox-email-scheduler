@@ -29,6 +29,7 @@ model User {
   name             String
   email            String     @unique
   avatarUrl        String?
+  passwordHash     String?
   slackAccessToken String?
   slackChannelId   String?
   slackWebhookUrl  String?
