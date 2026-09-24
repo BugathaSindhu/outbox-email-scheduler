@@ -3,6 +3,7 @@ import passport from 'passport';
 import { authController } from '../controllers/auth.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { validateRequest } from '../middleware/validate.middleware';
+import { config } from '../config/env';
 import { z } from 'zod';
 
 const router = Router();
@@ -29,7 +30,10 @@ router.get(
 
 router.get(
   '/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+  passport.authenticate('google', {
+    session: false,
+    failureRedirect: `${config.frontendUrl}/login?error=auth_failed`,
+  }),
   (req, res, next) => authController.googleCallback(req, res).catch(next)
 );
 

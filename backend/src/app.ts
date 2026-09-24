@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import passport from 'passport';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import basicAuth from 'express-basic-auth';
 import { config } from './config/env';
 import { configureGoogleOAuth } from './integrations/google/googleOAuth';
 import { serverAdapter } from './queues/email.queue';
@@ -14,13 +17,20 @@ import healthRoutes from './routes/health.routes';
 
 const app = express();
 
-// Middleware
+// Security Headers & Middleware
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 app.use(
   cors({
     origin: [config.frontendUrl, 'http://localhost:3000'],
     credentials: true,
   })
 );
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -28,8 +38,22 @@ app.use(express.urlencoded({ extended: true }));
 configureGoogleOAuth();
 app.use(passport.initialize());
 
-// Bull Board UI
-app.use('/admin/queues', serverAdapter.getRouter());
+// Protected Bull Board UI
+app.use('/admin/queues', (req, res, next) => {
+  const adminUser = config.admin.user;
+  const adminPass = config.admin.password;
+
+  if (!adminPass) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Bull Board Admin"');
+    return res.status(401).send('Admin authentication credentials required.');
+  }
+
+  return basicAuth({
+    users: { [adminUser]: adminPass },
+    challenge: true,
+    realm: 'Bull Board Admin',
+  })(req, res, next);
+}, serverAdapter.getRouter());
 
 // Google Search Console Site Verification Root Route
 app.get('/', (req, res) => {

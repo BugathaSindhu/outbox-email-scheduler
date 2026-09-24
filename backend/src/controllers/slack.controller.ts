@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { slackService } from '../services/slack.service';
+import { config } from '../config/env';
 
 export class SlackController {
   async connect(req: AuthenticatedRequest, res: Response) {
@@ -23,7 +24,7 @@ export class SlackController {
           <p>You can close this window and return to your Outbox dashboard.</p>
           <script>
             if (window.opener) {
-              window.opener.postMessage('slack_connected', '*');
+              window.opener.postMessage('slack_connected', ${JSON.stringify(config.frontendUrl)});
             }
             setTimeout(() => window.close(), 2000);
           </script>

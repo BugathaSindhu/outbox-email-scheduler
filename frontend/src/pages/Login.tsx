@@ -4,17 +4,21 @@ import { useAuth } from '../context/AuthContext';
 import { GOOGLE_OAUTH_URL } from '../services/api';
 
 export const Login: React.FC = () => {
-  const { user, loginWithToken, demoLogin } = useAuth();
+  const { user, loginWithToken, demoLogin, checkAuth } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loadingDemo, setLoadingDemo] = useState(false);
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      loginWithToken(token).then(() => navigate('/dashboard'));
-    } else if (user) {
-      navigate('/dashboard');
+    const tokenParam = searchParams.get('token');
+    if (tokenParam) {
+      loginWithToken(tokenParam).then(() => navigate('/dashboard'));
+    } else {
+      checkAuth().then((authenticated) => {
+        if (authenticated || user) {
+          navigate('/dashboard');
+        }
+      });
     }
   }, [searchParams, user]);
 
@@ -27,8 +31,9 @@ export const Login: React.FC = () => {
     try {
       await demoLogin('reviewer@outboxlabs.io', 'Evaluation User');
       navigate('/dashboard');
-    } catch {
-      alert('Failed to log in with demo account');
+    } catch (err: any) {
+      const msg = err.response?.data?.error || 'Demo login is disabled or unavailable. Please use Google OAuth.';
+      alert(msg);
     } finally {
       setLoadingDemo(false);
     }

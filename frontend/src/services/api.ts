@@ -11,6 +11,7 @@ export const BULL_BOARD_URL = rawApiUrl ? `${rawApiUrl}/admin/queues` : '/admin/
 
 const api = axios.create({
   baseURL: rawApiUrl ? `${rawApiUrl}/api` : '/api',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },

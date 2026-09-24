@@ -35,6 +35,13 @@ export const config = {
     redirectUri: process.env.SLACK_REDIRECT_URI || 'http://localhost:5000/api/slack/callback',
   },
 
+  admin: {
+    user: process.env.ADMIN_DASHBOARD_USER || 'admin',
+    password: process.env.ADMIN_DASHBOARD_PASSWORD || '',
+  },
+
+  enableDemoLogin: process.env.ENABLE_DEMO_LOGIN !== undefined ? process.env.ENABLE_DEMO_LOGIN === 'true' : process.env.NODE_ENV !== 'production',
+
   worker: {
     concurrency: parseInt(process.env.WORKER_CONCURRENCY || '5', 10),
     defaultEmailDelaySeconds: parseInt(process.env.DEFAULT_EMAIL_DELAY_SECONDS || '2', 10),

@@ -12,7 +12,11 @@ export const authenticateToken = async (
   next: NextFunction
 ) => {
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  let token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+  if (!token && req.cookies) {
+    token = req.cookies.outbox_token || req.cookies.token || null;
+  }
 
   if (!token) {
     return res.status(401).json({ error: 'Authentication token required' });

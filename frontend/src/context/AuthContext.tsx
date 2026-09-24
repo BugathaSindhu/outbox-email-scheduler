@@ -9,7 +9,8 @@ interface AuthContextType {
   slackStatus: SlackStatus;
   loginWithToken: (token: string) => Promise<void>;
   demoLogin: (email?: string, name?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<boolean>;
   refreshSlackStatus: () => Promise<void>;
 }
 
@@ -21,14 +22,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(localStorage.getItem('outbox_token'));
   const [slackStatus, setSlackStatus] = useState<SlackStatus>({ connected: false });
 
-  const fetchCurrentUser = async (jwtToken: string) => {
+  const fetchCurrentUser = async (): Promise<boolean> => {
     try {
       const response = await api.get('/auth/me');
       setUser(response.data.user);
       await fetchSlackStatus();
-    } catch (error) {
-      console.error('Failed to fetch user', error);
-      logout();
+      return true;
+    } catch {
+      setUser(null);
+      setSlackStatus({ connected: false });
+      return false;
     } finally {
       setLoading(false);
     }
@@ -44,26 +47,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    if (token) {
-      fetchCurrentUser(token);
-    } else {
-      setLoading(false);
-    }
-  }, [token]);
+    fetchCurrentUser();
+  }, []);
 
   const loginWithToken = async (newToken: string) => {
     localStorage.setItem('outbox_token', newToken);
     setToken(newToken);
-    await fetchCurrentUser(newToken);
+    await fetchCurrentUser();
   };
 
   const demoLogin = async (email?: string, name?: string) => {
     setLoading(true);
     try {
       const res = await api.post('/auth/demo-login', { email, name });
-      const newToken = res.data.token;
-      localStorage.setItem('outbox_token', newToken);
-      setToken(newToken);
+      if (res.data.token) {
+        localStorage.setItem('outbox_token', res.data.token);
+        setToken(res.data.token);
+      }
       setUser(res.data.user);
       await fetchSlackStatus();
     } finally {
@@ -71,7 +71,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Ignore network errors on logout
+    }
     localStorage.removeItem('outbox_token');
     setToken(null);
     setUser(null);
@@ -88,6 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithToken,
         demoLogin,
         logout,
+        checkAuth: fetchCurrentUser,
         refreshSlackStatus: fetchSlackStatus,
       }}
     >
