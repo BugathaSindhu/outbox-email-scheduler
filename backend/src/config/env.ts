@@ -26,7 +26,7 @@ export const config = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback',
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL || (process.env.NODE_ENV === 'production' ? `${process.env.FRONTEND_URL || 'https://outbox-email-scheduler-omega.vercel.app'}/api/auth/google/callback` : 'http://localhost:5000/api/auth/google/callback'),
   },
 
   slack: {

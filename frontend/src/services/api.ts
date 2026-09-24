@@ -6,7 +6,7 @@ import axios from 'axios';
 const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
 
 export const API_BASE_URL = rawApiUrl;
-export const GOOGLE_OAUTH_URL = rawApiUrl ? `${rawApiUrl}/api/auth/google` : '/api/auth/google';
+export const GOOGLE_OAUTH_URL = '/api/auth/google';
 export const BULL_BOARD_URL = rawApiUrl ? `${rawApiUrl}/admin/queues` : '/admin/queues';
 
 const api = axios.create({
