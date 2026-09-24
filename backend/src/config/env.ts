@@ -51,8 +51,8 @@ export const config = {
   },
 
   admin: {
-    user: sanitizeSecret(process.env.ADMIN_DASHBOARD_USER) || 'admin',
-    password: sanitizeSecret(process.env.ADMIN_DASHBOARD_PASSWORD),
+    user: sanitizeSecret(process.env.ADMIN_DASHBOARD_USER || process.env.ADMIN_USERNAME) || 'admin',
+    password: sanitizeSecret(process.env.ADMIN_DASHBOARD_PASSWORD || process.env.ADMIN_PASSWORD),
   },
 
   enableDemoLogin: process.env.ENABLE_DEMO_LOGIN !== undefined ? process.env.ENABLE_DEMO_LOGIN === 'true' : process.env.NODE_ENV !== 'production',
