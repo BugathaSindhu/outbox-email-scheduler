@@ -33,4 +33,12 @@ serverAdapter.setBasePath('/admin/queues');
 createBullBoard({
   queues: [new BullMQAdapter(emailQueue) as any],
   serverAdapter,
+  options: {
+    uiConfig: {
+      boardTitle: 'Outbox Queue Dashboard',
+      miscLinks: [
+        { text: '← Back to Outbox Dashboard', url: 'https://outbox-email-scheduler-omega.vercel.app/dashboard' },
+      ],
+    },
+  },
 });
