@@ -31,6 +31,23 @@ app.use(passport.initialize());
 // Bull Board UI
 app.use('/admin/queues', serverAdapter.getRouter());
 
+// Google Search Console Site Verification Root Route
+app.get('/', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-site-verification" content="CgxReVpHm4D0qQl7THZ_z8s8R5xgdS3C1jCTgtb3YfI" />
+    <title>Outbox Backend API Service</title>
+</head>
+<body>
+    <h1>Outbox Backend API Service</h1>
+    <p>Status: Active</p>
+</body>
+</html>`);
+});
+
 // Routes
 app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
