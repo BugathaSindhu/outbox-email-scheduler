@@ -1,10 +1,10 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { Transporter } from 'nodemailer';
 import { config } from '../../config/env';
 import { logger } from '../../utils/logger';
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
 
-export const getEmailTransporter = async (): Promise<nodemailer.Transporter> => {
+export const getEmailTransporter = async (): Promise<Transporter> => {
   if (transporter) return transporter;
 
   if (config.ethereal.user && config.ethereal.password) {
