@@ -16,6 +16,9 @@ export const getEmailTransporter = async (): Promise<Transporter> => {
         user: config.ethereal.user,
         pass: config.ethereal.password,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
   } else {
     // Generate test account automatically if credentials not provided
@@ -29,6 +32,9 @@ export const getEmailTransporter = async (): Promise<Transporter> => {
         user: testAccount.user,
         pass: testAccount.pass,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
     logger.info({ user: testAccount.user }, 'Ethereal test account created successfully');
   }
