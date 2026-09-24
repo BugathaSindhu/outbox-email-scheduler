@@ -49,7 +49,13 @@ app.use('/admin/queues', (req, res, next) => {
   }
 
   return basicAuth({
-    users: { [adminUser]: adminPass },
+    authorizer: (username: string, password: string) => {
+      const cleanUser = username ? username.trim() : '';
+      const cleanPass = password ? password.trim() : '';
+      const userMatches = basicAuth.safeCompare(cleanUser, adminUser);
+      const passMatches = basicAuth.safeCompare(cleanPass, adminPass);
+      return userMatches && passMatches;
+    },
     challenge: true,
     realm: 'Bull Board Admin',
   })(req, res, next);

@@ -4,6 +4,15 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
 
+const sanitizeSecret = (val?: string): string => {
+  if (!val) return '';
+  let str = String(val).trim();
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    str = str.slice(1, -1).trim();
+  }
+  return str;
+};
+
 export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -36,8 +45,8 @@ export const config = {
   },
 
   admin: {
-    user: process.env.ADMIN_DASHBOARD_USER || 'admin',
-    password: process.env.ADMIN_DASHBOARD_PASSWORD || '',
+    user: sanitizeSecret(process.env.ADMIN_DASHBOARD_USER) || 'admin',
+    password: sanitizeSecret(process.env.ADMIN_DASHBOARD_PASSWORD),
   },
 
   enableDemoLogin: process.env.ENABLE_DEMO_LOGIN !== undefined ? process.env.ENABLE_DEMO_LOGIN === 'true' : process.env.NODE_ENV !== 'production',
