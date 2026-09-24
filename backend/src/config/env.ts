@@ -27,7 +27,7 @@ export const config = {
   backendUrl: process.env.BACKEND_URL || 'http://localhost:5000',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 
-  databaseUrl: process.env.DATABASE_URL || 'mysql://root:password@localhost:3306/outbox',
+  databaseUrl: sanitizeSecret(process.env.DATABASE_URL) || 'mysql://root:password@localhost:3306/outbox',
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
   elasticsearchUrl: process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
 

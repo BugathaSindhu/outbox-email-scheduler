@@ -1,7 +1,13 @@
 import { PrismaClient } from '@prisma/client';
+import { config } from './env';
 import { logger } from '../utils/logger';
 
 export const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: config.databaseUrl,
+    },
+  },
   log: [
     { emit: 'event', level: 'query' },
     { emit: 'stdout', level: 'error' },
