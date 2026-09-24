@@ -78,7 +78,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({ onEmailsParsed }) => {
       {!fileName ? (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-[#c3c6d7] rounded-lg p-6 bg-[#f8f9ff] hover:bg-[#eff4ff] transition-colors duration-150 text-center flex flex-col items-center justify-center cursor-pointer mb-3 group"
+          className="border-2 border-dashed border-slate-200 rounded-xl p-6 bg-slate-50/60 hover:bg-slate-100/70 hover:border-[#1e3a8a]/50 transition-all duration-150 text-center flex flex-col items-center justify-center cursor-pointer mb-4 group"
         >
           <input
             type="file"
@@ -87,30 +87,30 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({ onEmailsParsed }) => {
             accept=".csv,text/csv,.txt"
             className="hidden"
           />
-          <div className="w-10 h-10 rounded-full bg-[#e5eeff] text-[#004ac6] flex items-center justify-center mb-2 group-hover:scale-105 transition-transform duration-150">
-            <span className="material-symbols-outlined text-[24px]">cloud_upload</span>
+          <div className="w-10 h-10 rounded-full bg-slate-100 group-hover:bg-[#0f172a] text-[#0f172a] group-hover:text-white flex items-center justify-center mb-2.5 group-hover:scale-105 transition-all duration-150 shadow-xs">
+            <span className="material-symbols-outlined text-[22px]">cloud_upload</span>
           </div>
-          <h3 className="text-[13px] font-semibold text-[#0b1c30] mb-0.5">Upload recipient list</h3>
-          <p className="text-[12px] text-[#434655] mb-1">Drag and drop your CSV or TXT file here, or browse.</p>
-          <span className="text-[11px] font-medium text-[#737686]">Accepted formats: CSV, TXT</span>
+          <h3 className="text-sm font-semibold text-[#0f172a] mb-0.5">Upload recipient list</h3>
+          <p className="text-xs text-slate-500 mb-1">Drag and drop your CSV or TXT file here, or browse.</p>
+          <span className="text-[11px] text-slate-400">Accepted formats: CSV, TXT</span>
         </div>
       ) : (
-        <div className="flex items-center justify-between p-3 px-4 bg-[#eff4ff] border border-[#c3c6d7] rounded-lg mb-3">
+        <div className="flex items-center justify-between p-3.5 bg-slate-50/80 border border-slate-200 rounded-lg mb-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded bg-white border border-[#c3c6d7] flex items-center justify-center text-[#004ac6]">
+            <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[#0f172a] shadow-xs">
               <span className="material-symbols-outlined text-[20px]">description</span>
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[13px] text-[#0b1c30] font-semibold truncate">{fileName}</span>
-              <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#0f172a] truncate">{fileName}</span>
+              <div className="flex items-center gap-2 mt-0.5">
                 {validCount !== null && (
-                  <span className="text-[11px] text-emerald-700 font-medium">
-                    {validCount} valid email address{validCount !== 1 ? 'es' : ''} detected
+                  <span className="text-[11px] text-[#0f172a] font-medium">
+                    {validCount} recipient{validCount !== 1 ? 's' : ''} detected
                   </span>
                 )}
                 {invalidCount > 0 && (
                   <span className="text-[11px] text-amber-700 font-medium">
-                    • {invalidCount} invalid row{invalidCount !== 1 ? 's' : ''} ignored
+                    • {invalidCount} invalid row{invalidCount !== 1 ? 's' : ''}
                   </span>
                 )}
               </div>
@@ -119,10 +119,11 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({ onEmailsParsed }) => {
           <button
             type="button"
             onClick={handleClear}
-            className="p-1 text-gray-400 hover:text-[#ba1a1a] rounded transition"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-slate-600 hover:text-[#0f172a] hover:bg-slate-200/70 rounded text-xs font-medium transition-colors duration-150"
             title="Remove file"
           >
-            <span className="material-symbols-outlined text-[18px]">close</span>
+            <span className="material-symbols-outlined text-[15px]">close</span>
+            <span>Remove</span>
           </button>
         </div>
       )}

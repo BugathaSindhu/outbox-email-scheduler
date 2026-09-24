@@ -15,6 +15,10 @@ export const Dashboard: React.FC = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchSource, setSearchSource] = useState<string>('');
 
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [dateFilter, setDateFilter] = useState<string>('ALL');
+  const [clientSearchQuery, setClientSearchQuery] = useState<string>('');
+
   const [loadingScheduled, setLoadingScheduled] = useState(true);
   const [loadingSent, setLoadingSent] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,132 +53,160 @@ export const Dashboard: React.FC = () => {
     setActiveTab('search');
   };
 
-  const countScheduled = scheduledEmails.filter((e) => e.status === 'SCHEDULED' || e.status === 'PROCESSING' || e.status === 'RESCHEDULED').length;
-  const countSent = sentEmails.filter((e) => e.status === 'SENT').length;
-  const countFailed = sentEmails.filter((e) => e.status === 'FAILED').length;
+  // Filter pipeline
+  const filterList = (list: ScheduledEmail[]) => {
+    return list.filter((email) => {
+      // Status filter
+      if (statusFilter !== 'ALL') {
+        if (statusFilter === 'SCHEDULED' && email.status !== 'SCHEDULED' && email.status !== 'RESCHEDULED') return false;
+        if (statusFilter === 'PROCESSING' && email.status !== 'PROCESSING') return false;
+        if (statusFilter === 'SENT' && email.status !== 'SENT') return false;
+        if (statusFilter === 'FAILED' && email.status !== 'FAILED') return false;
+      }
+
+      // Date filter
+      if (dateFilter !== 'ALL') {
+        const targetDate = new Date(email.scheduledAt || email.sentAt || Date.now());
+        const today = new Date();
+        if (dateFilter === 'TODAY') {
+          if (targetDate.toDateString() !== today.toDateString()) return false;
+        } else if (dateFilter === 'TOMORROW') {
+          const tomorrow = new Date();
+          tomorrow.setDate(today.getDate() + 1);
+          if (targetDate.toDateString() !== tomorrow.toDateString()) return false;
+        } else if (dateFilter === 'UPCOMING') {
+          if (targetDate.getTime() < today.getTime()) return false;
+        }
+      }
+
+      // Search Query filter
+      if (clientSearchQuery.trim()) {
+        const q = clientSearchQuery.toLowerCase();
+        const recipientMatch = email.recipient.toLowerCase().includes(q);
+        const subjectMatch = email.subject.toLowerCase().includes(q);
+        if (!recipientMatch && !subjectMatch) return false;
+      }
+
+      return true;
+    });
+  };
+
+  const filteredScheduled = filterList(scheduledEmails);
+  const filteredSent = filterList(sentEmails);
 
   return (
     <DashboardLayout>
       {/* Page Header */}
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
         <div>
-          <h1 className="text-2xl font-bold text-[#0b1c30] tracking-tight">Dashboard</h1>
-          <p className="text-[14px] text-[#434655] mt-1">Manage and monitor your scheduled email operations.</p>
+          <h1 className="text-2xl font-bold text-[#0f172a] tracking-tight">Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-1">Manage and monitor your scheduled emails.</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/compose')}
-            className="bg-[#2563eb] hover:bg-[#004ac6] text-white font-medium text-[13px] h-9 px-4 rounded-lg transition-colors duration-150 shadow-sm flex items-center gap-1.5"
+            className="flex items-center justify-center gap-1.5 bg-[#0f172a] hover:bg-[#1e293b] active:bg-[#172554] text-white font-medium text-xs py-2 px-4 rounded-lg transition-colors duration-150 shadow-sm shadow-[#0f172a]/20"
           >
-            <span className="material-symbols-outlined text-base">add</span>
-            <span>Compose New Email</span>
+            <span className="material-symbols-outlined text-[18px]">edit_note</span>
+            <span>Compose</span>
           </button>
         </div>
       </section>
 
-      {/* Summary Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Scheduled Emails */}
-        <div className="bg-white border border-[#c3c6d7] rounded-lg p-5 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-[#434655]">Scheduled Emails</span>
-            <div className="w-8 h-8 rounded-lg bg-[#eff4ff] text-[#004ac6] flex items-center justify-center">
-              <span className="material-symbols-outlined text-lg">schedule_send</span>
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-[30px] font-semibold text-[#0b1c30] tracking-tight">{countScheduled}</div>
-          </div>
-        </div>
-
-        {/* Sent Emails */}
-        <div className="bg-white border border-[#c3c6d7] rounded-lg p-5 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-[#434655]">Sent Emails</span>
-            <div className="w-8 h-8 rounded-lg bg-[#eff4ff] text-[#004ac6] flex items-center justify-center">
-              <span className="material-symbols-outlined text-lg">mark_email_read</span>
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-[30px] font-semibold text-[#0b1c30] tracking-tight">{countSent}</div>
-          </div>
-        </div>
-
-        {/* Failed Emails */}
-        <div className="bg-white border border-[#c3c6d7] rounded-lg p-5 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-[#434655]">Failed Emails</span>
-            <div className="w-8 h-8 rounded-lg bg-[#ffdad6] text-[#ba1a1a] flex items-center justify-center">
-              <span className="material-symbols-outlined text-lg">error_outline</span>
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-[30px] font-semibold text-[#0b1c30] tracking-tight">{countFailed}</div>
-          </div>
-        </div>
-
-        {/* Active Senders */}
-        <div className="bg-white border border-[#c3c6d7] rounded-lg p-5 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-medium text-[#434655]">Active Senders</span>
-            <div className="w-8 h-8 rounded-lg bg-[#eff4ff] text-[#004ac6] flex items-center justify-center">
-              <span className="material-symbols-outlined text-lg">alternate_email</span>
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="text-[30px] font-semibold text-[#0b1c30] tracking-tight">1</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Table Section */}
+      {/* Section: Recent Scheduled Emails */}
       <section className="flex flex-col gap-4">
-        {/* Controls Bar & Tabs */}
-        <div className="bg-white border border-[#c3c6d7] rounded-lg p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('scheduled')}
-              className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
-                activeTab === 'scheduled'
-                  ? 'bg-[#e5eeff] text-[#004ac6] font-semibold'
-                  : 'text-[#434655] hover:bg-[#eff4ff]'
-              }`}
-            >
-              Scheduled Queue ({scheduledEmails.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('sent')}
-              className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
-                activeTab === 'sent'
-                  ? 'bg-[#e5eeff] text-[#004ac6] font-semibold'
-                  : 'text-[#434655] hover:bg-[#eff4ff]'
-              }`}
-            >
-              Sent History ({sentEmails.length})
-            </button>
-            {activeTab === 'search' && (
-              <span className="px-3 py-1.5 rounded-lg text-[13px] bg-purple-50 text-purple-700 font-semibold">
-                Search Results ({searchResults.length})
-              </span>
-            )}
-          </div>
-
-          {/* Search Input Component */}
-          <SearchBar onSearchResults={handleSearchResults} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-[#0f172a]">Recent Scheduled Emails</h2>
         </div>
 
-        {/* Tab Content */}
+        {/* Controls Bar */}
+        <div className="bg-white border border-slate-200/90 rounded-lg p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
+          {/* Search Input */}
+          <SearchBar
+            onSearchResults={handleSearchResults}
+            onClientFilterChange={(q) => setClientSearchQuery(q)}
+          />
+
+          {/* Filters & Tabs */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Status Filter Dropdown */}
+            <div className="relative inline-block text-left">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 bg-white text-[#0f172a] font-medium text-xs focus:border-[#1e3a8a] focus:ring-1 focus:ring-[#1e3a8a] outline-none appearance-none cursor-pointer"
+              >
+                <option value="ALL">Status: All</option>
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="PROCESSING">Processing</option>
+                <option value="SENT">Sent</option>
+                <option value="FAILED">Failed</option>
+              </select>
+              <span className="material-symbols-outlined absolute right-2 top-2.5 text-slate-400 text-lg pointer-events-none">
+                arrow_drop_down
+              </span>
+            </div>
+
+            {/* Date Filter Dropdown */}
+            <div className="relative inline-block text-left">
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="h-9 px-3 pr-8 rounded-lg border border-slate-200 bg-white text-[#0f172a] font-medium text-xs focus:border-[#1e3a8a] focus:ring-1 focus:ring-[#1e3a8a] outline-none appearance-none cursor-pointer"
+              >
+                <option value="ALL">Date: All Time</option>
+                <option value="TODAY">Today</option>
+                <option value="TOMORROW">Tomorrow</option>
+                <option value="UPCOMING">Upcoming</option>
+              </select>
+              <span className="material-symbols-outlined absolute right-2 top-2.5 text-slate-400 text-lg pointer-events-none">
+                arrow_drop_down
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* View Switcher Tabs */}
+        <div className="flex items-center gap-2 border-b border-slate-200/80 pb-2">
+          <button
+            onClick={() => setActiveTab('scheduled')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              activeTab === 'scheduled'
+                ? 'bg-blue-50/70 text-[#0f172a] font-semibold border border-blue-200/80'
+                : 'text-slate-600 hover:bg-slate-100/80'
+            }`}
+          >
+            Scheduled Queue ({scheduledEmails.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('sent')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              activeTab === 'sent'
+                ? 'bg-blue-50/70 text-[#0f172a] font-semibold border border-blue-200/80'
+                : 'text-slate-600 hover:bg-slate-100/80'
+            }`}
+          >
+            Sent History ({sentEmails.length})
+          </button>
+          {activeTab === 'search' && (
+            <span className="px-3 py-1.5 rounded-lg text-xs bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200">
+              Search Results ({searchResults.length})
+            </span>
+          )}
+        </div>
+
+        {/* Tab Content Tables */}
         {activeTab === 'scheduled' && (
-          <ScheduledTable emails={scheduledEmails} loading={loadingScheduled} error={error} />
+          <ScheduledTable emails={filteredScheduled} loading={loadingScheduled} error={error} />
         )}
 
         {activeTab === 'sent' && (
-          <SentTable emails={sentEmails} loading={loadingSent} error={error} />
+          <SentTable emails={filteredSent} loading={loadingSent} error={error} />
         )}
 
         {activeTab === 'search' && (
           <div className="space-y-3">
-            <div className="bg-[#e5eeff] border border-[#c3c6d7] rounded-lg p-2.5 px-4 text-[12px] text-[#004ac6] font-medium flex items-center justify-between">
+            <div className="bg-blue-50/70 border border-blue-200/80 rounded-lg p-3 text-xs text-[#1e3a8a] font-medium flex items-center justify-between">
               <span>
                 Found {searchResults.length} matching document{searchResults.length !== 1 ? 's' : ''} via{' '}
                 <strong className="uppercase">{searchSource}</strong>

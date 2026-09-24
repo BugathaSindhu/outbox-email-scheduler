@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScheduledEmail } from '../types';
 
 interface ScheduledTableProps {
@@ -8,29 +8,26 @@ interface ScheduledTableProps {
 }
 
 export const ScheduledTable: React.FC<ScheduledTableProps> = ({ emails, loading, error }) => {
+  const [selectedEmail, setSelectedEmail] = useState<ScheduledEmail | null>(null);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'SCHEDULED':
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
-            Scheduled
-          </span>
-        );
       case 'RESCHEDULED':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
-            Rescheduled
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-[#1e3a8a] border border-blue-200/80">
+            Scheduled
           </span>
         );
       case 'PROCESSING':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-800 border border-blue-200">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-[#1e3a8a] border border-blue-200/80">
             Processing
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700 border border-gray-200">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-[#0f172a] border border-slate-300">
             {status}
           </span>
         );
@@ -39,16 +36,16 @@ export const ScheduledTable: React.FC<ScheduledTableProps> = ({ emails, loading,
 
   if (loading) {
     return (
-      <div className="bg-white border border-[#c3c6d7] rounded-lg p-12 text-center shadow-sm">
-        <span className="material-symbols-outlined text-2xl text-[#2563eb] animate-spin mb-2">progress_activity</span>
-        <p className="text-xs font-medium text-[#434655]">Loading scheduled email queue...</p>
+      <div className="bg-white border border-slate-200/90 rounded-lg p-12 text-center shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
+        <span className="material-symbols-outlined text-2xl text-[#1e3a8a] animate-spin mb-2">progress_activity</span>
+        <p className="text-xs font-medium text-slate-600">Loading scheduled email queue...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-[#ffdad6] border border-[#ba1a1a] rounded-lg p-6 text-center text-[#93000a]">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center text-red-900">
         <span className="material-symbols-outlined text-2xl mb-1">error_outline</span>
         <p className="font-semibold text-xs">{error}</p>
       </div>
@@ -57,10 +54,10 @@ export const ScheduledTable: React.FC<ScheduledTableProps> = ({ emails, loading,
 
   if (emails.length === 0) {
     return (
-      <div className="bg-white border border-[#c3c6d7] rounded-lg p-12 text-center shadow-sm">
-        <span className="material-symbols-outlined text-3xl text-gray-400 mb-2">schedule_send</span>
-        <h3 className="text-xs font-semibold text-[#0b1c30]">No scheduled emails pending</h3>
-        <p className="text-[11px] text-[#434655] mt-1 max-w-sm mx-auto">
+      <div className="bg-white border border-slate-200/90 rounded-lg p-12 text-center shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
+        <span className="material-symbols-outlined text-3xl text-slate-400 mb-2">schedule_send</span>
+        <h3 className="text-xs font-semibold text-[#0f172a]">No scheduled emails pending</h3>
+        <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
           When you compose and schedule an email campaign, queued dispatches will appear here.
         </p>
       </div>
@@ -68,39 +65,93 @@ export const ScheduledTable: React.FC<ScheduledTableProps> = ({ emails, loading,
   }
 
   return (
-    <div className="bg-white border border-[#c3c6d7] rounded-lg overflow-hidden shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="h-9 bg-[#eff4ff] border-b border-[#c3c6d7]">
-              <th className="px-4 text-[12px] font-medium text-[#434655] uppercase tracking-wider">Recipient</th>
-              <th className="px-4 text-[12px] font-medium text-[#434655] uppercase tracking-wider">Subject</th>
-              <th className="px-4 text-[12px] font-medium text-[#434655] uppercase tracking-wider">Scheduled Time</th>
-              <th className="px-4 text-[12px] font-medium text-[#434655] uppercase tracking-wider">Status</th>
-              <th className="px-4 text-[12px] font-medium text-[#434655] uppercase tracking-wider text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#c3c6d7]/50">
-            {emails.map((email) => (
-              <tr key={email.id} className="h-11 hover:bg-[#eff4ff] transition-colors duration-150">
-                <td className="px-4 text-[13px] font-medium text-[#0b1c30]">{email.recipient}</td>
-                <td className="px-4 text-[13px] text-[#434655] max-w-xs truncate">{email.subject}</td>
-                <td className="px-4 text-[13px] text-[#434655]">
-                  {new Date(email.scheduledAt).toLocaleString()}
-                </td>
-                <td className="px-4">{getStatusBadge(email.status)}</td>
-                <td className="px-4 text-right">
-                  <span className="text-[12px] text-[#434655]">Enqueued</span>
-                </td>
+    <>
+      <div className="bg-white border border-slate-200/90 rounded-lg overflow-hidden shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="h-9 bg-slate-50/90 border-b border-slate-200">
+                <th className="px-4 font-medium text-[12px] text-slate-500 uppercase tracking-wider">Recipient</th>
+                <th className="px-4 font-medium text-[12px] text-slate-500 uppercase tracking-wider">Subject</th>
+                <th className="px-4 font-medium text-[12px] text-slate-500 uppercase tracking-wider">Scheduled Time</th>
+                <th className="px-4 font-medium text-[12px] text-slate-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 font-medium text-[12px] text-slate-500 uppercase tracking-wider text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {emails.map((email) => (
+                <tr key={email.id} className="h-11 hover:bg-blue-50/30 transition-colors duration-150">
+                  <td className="px-4 text-xs font-medium text-[#0f172a]">{email.recipient}</td>
+                  <td className="px-4 text-xs text-slate-600 max-w-xs truncate">{email.subject}</td>
+                  <td className="px-4 text-xs text-slate-500">
+                    {new Date(email.scheduledAt).toLocaleString()}
+                  </td>
+                  <td className="px-4">{getStatusBadge(email.status)}</td>
+                  <td className="px-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setSelectedEmail(email)}
+                        className="text-xs text-slate-600 hover:text-[#1e3a8a] transition-colors font-medium"
+                      >
+                        View
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="h-11 px-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 bg-white">
+          <span>Showing {emails.length} scheduled email{emails.length !== 1 ? 's' : ''}</span>
+          <div className="flex items-center gap-1">
+            <button className="h-7 w-7 rounded border border-slate-200 flex items-center justify-center hover:bg-blue-50 hover:text-[#0f172a] text-slate-600 disabled:opacity-40 transition-colors" disabled>
+              <span className="material-symbols-outlined text-sm">chevron_left</span>
+            </button>
+            <button className="h-7 w-7 rounded border border-slate-200 flex items-center justify-center hover:bg-blue-50 hover:text-[#0f172a] text-slate-600 disabled:opacity-40 transition-colors" disabled>
+              <span className="material-symbols-outlined text-sm">chevron_right</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="h-10 px-4 border-t border-[#c3c6d7] flex items-center justify-between text-[12px] text-[#434655] bg-white">
-        <span>Showing {emails.length} scheduled item{emails.length !== 1 ? 's' : ''}</span>
-      </div>
-    </div>
+      {/* View Email Detail Modal */}
+      {selectedEmail && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-xl max-w-lg w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-base font-bold text-[#0f172a]">Scheduled Email Details</h3>
+              <button
+                onClick={() => setSelectedEmail(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="space-y-2 text-xs">
+              <p><strong className="text-slate-700">Recipient:</strong> {selectedEmail.recipient}</p>
+              <p><strong className="text-slate-700">Subject:</strong> {selectedEmail.subject}</p>
+              <p><strong className="text-slate-700">Scheduled At:</strong> {new Date(selectedEmail.scheduledAt).toLocaleString()}</p>
+              <p><strong className="text-slate-700">Status:</strong> {selectedEmail.status}</p>
+              <div className="pt-2">
+                <strong className="text-slate-700 block mb-1">Body Preview:</strong>
+                <div className="bg-slate-50 border border-slate-200 rounded p-3 text-slate-800 font-mono whitespace-pre-wrap">
+                  {selectedEmail.body}
+                </div>
+              </div>
+            </div>
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setSelectedEmail(null)}
+                className="px-4 py-1.5 bg-[#0f172a] text-white rounded-lg text-xs font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
