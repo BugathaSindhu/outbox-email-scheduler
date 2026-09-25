@@ -1,22 +1,158 @@
-# Outbox Labs — Email Scheduling SaaS Platform
+# Outbox — Production Email Scheduling Platform
 
-Production-quality, high-throughput email scheduling SaaS platform built with **React**, **TypeScript**, **Node.js**, **Express**, **MySQL (Prisma ORM)**, **Redis**, **BullMQ**, **Ethereal SMTP**, **Elasticsearch**, **Google OAuth**, **Email/Password Auth**, and **Slack Integration**.
-
----
-
-## 1. Project Overview
-
-Outbox Labs handles large-scale scheduled email dispatches safely without blocking the application server. When a user schedules a campaign with hundreds or thousands of recipients, the backend enqueues delayed jobs into BullMQ. Dedicated background workers consume the queue concurrently, enforce distributed hourly rate limits using atomic Redis counters, protect against duplicate sends using idempotency keys, send emails via Ethereal SMTP, index documents into Elasticsearch for fast search, and notify Slack channels when limits are exceeded.
+Production-grade, high-throughput email scheduling SaaS platform built with **React**, **TypeScript**, **Node.js**, **Express**, **MySQL (Prisma ORM)**, **Redis**, **BullMQ**, **Ethereal SMTP**, **Elasticsearch**, **Google OAuth**, **Email/Password Auth**, and **Slack Integration**.
 
 ---
 
-## 2. Architecture & Core Data Flow
+## 1. How to Run Backend & Infrastructure
+
+The backend comprises an Express API server, Prisma ORM targeting MySQL, Redis for BullMQ queue management and atomic rate limiting, dedicated BullMQ queue workers, and Elasticsearch for fast log queries.
+
+### Prerequisites
+- **Node.js**: v18.x or >= v20.x
+- **Docker & Docker Compose** (for running MySQL, Redis, and Elasticsearch locally)
+
+### Step-by-Step Instructions
+
+1. **Navigate to Backend Directory & Install Dependencies**:
+   ```bash
+   cd backend
+   npm install
+   ```
+
+2. **Configure Environment Variables**:
+   Copy `.env.example` to `.env` in the `backend` directory:
+   ```bash
+   cp .env.example .env
+   ```
+   *(Ensure `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, and optional Ethereal credentials are set. See Section 3 for the complete reference).*
+
+3. **Start Local Infrastructure (MySQL, Redis, Elasticsearch)**:
+   From the project root:
+   ```bash
+   docker compose up -d mysql redis elasticsearch
+   ```
+
+4. **Initialize & Push Database Schema (Prisma)**:
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+
+5. **Start Backend Server & BullMQ Worker**:
+   - **Development Mode** (Runs Express API and BullMQ worker concurrently with hot reload):
+     ```bash
+     npm run dev
+     ```
+   - **Production Build & Execution**:
+     ```bash
+     npm run build
+     npm start
+     ```
+
+6. **Verify Backend Health & Queue Monitor**:
+   - **Health Endpoint**: `http://localhost:5000/api/health`
+   - **Bull Board Queue Dashboard**: `http://localhost:5000/admin/queues`
+
+---
+
+## 2. How to Run Frontend
+
+The frontend is built with React 18, Vite, TypeScript, and Tailwind CSS following the Stitch Outbox Dark Navy visual specification.
+
+1. **Navigate to Frontend Directory & Install Dependencies**:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Configure Environment Variables**:
+   Create `.env` in `frontend/`:
+   ```env
+   VITE_API_URL=http://localhost:5000
+   ```
+
+3. **Start Development Server**:
+   ```bash
+   npm run dev
+   ```
+   The frontend application will start at `http://localhost:3000` (or `http://localhost:5173`).
+
+4. **Build for Production**:
+   ```bash
+   npm run build
+   ```
+
+---
+
+## 3. How to Set Up Ethereal Email & Environment Variables
+
+Outbox uses **Nodemailer** paired with **Ethereal SMTP** (`smtp.ethereal.email`) for safe email dispatches. Ethereal captures outgoing emails without sending real messages to live recipients, generating viewable web preview URLs for testing and verification.
+
+### Ethereal Setup Options
+
+1. **Option A: Auto-Creation (Zero Configuration)**:
+   - If `ETHEREAL_USER` and `ETHEREAL_PASS` are left empty in `backend/.env`, Nodemailer automatically creates a test account on backend server startup:
+     ```
+     No Ethereal credentials found in env. Auto-creating test account...
+     Ethereal test account created successfully: user@ethereal.email
+     ```
+2. **Option B: Manual Ethereal Credentials**:
+   - Visit [ethereal.email](https://ethereal.email) and click **Create Ethereal Account**.
+   - Copy the generated SMTP username and password into `backend/.env`:
+     ```env
+     ETHEREAL_USER=your_ethereal_username@ethereal.email
+     ETHEREAL_PASS=your_ethereal_password
+     ```
+
+### Complete Environment Variables Reference
+
+#### Backend Environment Variables (`backend/.env`)
+```env
+PORT=5000
+NODE_ENV=development
+JWT_SECRET=super-secret-outbox-jwt-key
+FRONTEND_URL=http://localhost:3000
+BACKEND_URL=http://localhost:5000
+
+# Database & Cache Connection Strings
+DATABASE_URL="mysql://root:password@localhost:3306/outbox"
+REDIS_URL="redis://localhost:6379"
+ELASTICSEARCH_URL="http://localhost:9200"
+
+# Ethereal SMTP Credentials (Optional - Auto-created if empty)
+ETHEREAL_USER=
+ETHEREAL_PASS=
+
+# Google OAuth Credentials
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+
+# Slack OAuth Integration
+SLACK_CLIENT_ID=your-slack-client-id
+SLACK_CLIENT_SECRET=your-slack-client-secret
+SLACK_REDIRECT_URI=http://localhost:5000/api/slack/callback
+
+# Bull Board Dashboard Credentials
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin
+```
+
+#### Frontend Environment Variables (`frontend/.env`)
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+---
+
+## 4. Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    React + TypeScript Dashboard                 │
 └────────────────────────────────┬────────────────────────────────┘
-                                 │ HTTP / REST API (Vercel Frontend)
+                                 │ HTTP / REST API
                                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                  Node.js + Express API Backend                  │
@@ -40,186 +176,82 @@ Outbox Labs handles large-scale scheduled email dispatches safely without blocki
           (Atomic Counter)  (Delivery)     (Limit Exceeded)
 ```
 
----
+### How Scheduling Works
+1. **API Schedule Request**: When a user submits a campaign on the Compose page, `POST /api/emails/schedule` accepts:
+   - Recipient list, subject, body, target `startTime` (ISO string), `delaySeconds` (min delay between individual sends), and `hourlyLimit`.
+2. **DB Record & Job Creation**:
+   - A `Campaign` record and individual `ScheduledEmail` rows are created in MySQL with initial status `SCHEDULED`.
+   - Each email is assigned a unique `idempotencyKey` (`md5(campaignId + ":" + recipient + ":" + index)`).
+   - For each recipient, a delayed BullMQ job is enqueued with a calculated delay:
+     $$\text{delayMs} = \max(0, \text{startTime.getTime()} - \text{now}) + (i \times \text{delaySeconds} \times 1000)$$
+3. **BullMQ Execution**:
+   - Dedicated BullMQ workers listen to the queue and execute dispatches asynchronously when delayed timers expire.
 
-## 3. Technology Stack
+### How Persistence on Restart is Handled
+- **MySQL as Single Source of Truth**: All campaign metadata and email statuses (`SCHEDULED`, `PROCESSING`, `SENT`, `FAILED`, `RESCHEDULED`) are saved synchronously to MySQL.
+- **Worker Crash Recovery & Reconciliation Service**:
+  - On backend server startup, `ReconciliationService` scans MySQL for past-due emails marked `SCHEDULED` or `RESCHEDULED`.
+  - It checks whether an active job already exists in BullMQ for each record.
+  - If no active job exists (e.g. server crashed while job was pending), the service automatically re-enqueues a delayed BullMQ job targeting immediate execution.
+  - Completed dispatches (`SENT`) remain permanently stored in MySQL.
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide React, Axios, React Router v6.
-- **Backend**: Node.js, Express.js, TypeScript, Zod, Pino Logger, Passport.js, JWT, bcrypt.
-- **Relational Database**: **MySQL 8.0 ONLY** via Prisma ORM.
-- **Job Queue & Scheduler**: BullMQ + IORedis.
-- **Rate Limiting**: Distributed Redis Atomic Counter (`INCR` / `DECR`).
-- **Email Delivery**: Nodemailer + Ethereal SMTP (`smtp.ethereal.email:587`).
-- **Search Engine**: Elasticsearch 8.x.
-- **Authentication**: Google OAuth 2.0, Email/Password Auth, and Instant Demo Auth Mode.
-- **Monitoring**: Bull Board (`/admin/queues`).
-- **Containerization**: Docker & Docker Compose.
-
----
-
-## 4. Setup & Local Installation
-
-### Prerequisites
-
-- Node.js >= 20.x
-- Docker & Docker Compose
-
-### Option A: Running Infrastructure with Docker Compose (Recommended)
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/BugathaSindhu/outbox-email-scheduler.git
-   cd outbox-email-scheduler
-   ```
-
-2. **Configure Environment Variables**:
-   ```bash
-   cp .env.example .env
-   cp .env.example backend/.env
-   ```
-
-3. **Start Infrastructure Services (MySQL, Redis, Elasticsearch)**:
-   ```bash
-   docker compose up -d mysql redis elasticsearch
-   ```
-
-4. **Install Backend Dependencies & Apply Database Migrations**:
-   ```bash
-   cd backend
-   npm install
-   npx prisma generate
-   npx prisma db push
-   ```
-
-5. **Start Backend Server & BullMQ Worker**:
-   ```bash
-   npm run dev
-   ```
-
-6. **Install Frontend Dependencies & Start Development Server**:
-   Open a new terminal window:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-7. **Access Applications**:
-   - **Frontend App**: `http://localhost:3000`
-   - **Backend API**: `http://localhost:5000`
-   - **Bull Board Queue Dashboard**: `http://localhost:5000/admin/queues`
+### How Rate Limiting & Concurrency are Implemented
+1. **Distributed Rate Limiting (Redis Atomic Counters)**:
+   - Rate limits are scoped per sender per hour using Redis keys: `rate-limit:{senderId}:{YYYY-MM-DD-HH}`.
+   - Before dispatching an email, the BullMQ worker executes an atomic `INCR` command in Redis.
+   - The key TTL is automatically set to 7200 seconds (`EXPIRE`).
+   - If the counter exceeds `hourlyLimit`:
+     - The counter is rolled back using `DECR`.
+     - The email status in MySQL is updated to `RESCHEDULED`.
+     - The scheduled time is set to the top of the next UTC hour.
+     - A new delayed BullMQ job targeting the top of the next hour is enqueued.
+     - A Slack alert is posted via webhook if Slack is connected.
+2. **Worker Concurrency Control**:
+   - BullMQ workers operate with explicit concurrency settings (`concurrency: 5`), processing jobs asynchronously without blocking Express API handlers or main thread loops.
 
 ---
 
-## 5. Environment Variables
+## 5. List of Features Implemented
 
-The application reads configuration from environment variables. Example keys required for local and production deployment:
+### Backend Features
+- **Queue & Scheduler Engine**: BullMQ delayed job processing backed by Redis state durability.
+- **Persistence & Recovery**: MySQL database schema via Prisma ORM with startup reconciliation service for crash recovery.
+- **Distributed Rate Limiting**: Redis atomic counter (`INCR`/`DECR`) hourly limits with automatic rollover to top of next hour.
+- **Concurrency**: Controlled worker concurrency (`concurrency: 5`) for non-blocking asynchronous email processing.
+- **Idempotency Control**: Unique MD5 idempotency keys preventing duplicate email sends.
+- **SMTP Email Delivery**: Nodemailer integration with Ethereal SMTP auto-creation and preview URL tracking.
+- **Telemetry & Search**: Elasticsearch integration indexing sent dispatches for sub-second full text recipient/subject queries.
+- **Slack Alerting**: OAuth 2.0 Slack integration posting instant notifications when hourly rate limits are exceeded.
+- **Authentication**: Dual Google OAuth 2.0 and Email/Password authentication with HttpOnly JWT session cookies.
+- **Queue Monitor**: Integrated Bull Board interface (`/admin/queues`) with basic auth protection.
 
-### Backend Environment Variables (`backend/.env`)
-```env
-PORT=5000
-NODE_ENV=development
-JWT_SECRET=super-secret-outbox-jwt-key
-DATABASE_URL=mysql://root:password@localhost:3306/outbox
-REDIS_URL=redis://localhost:6379
-ELASTICSEARCH_URL=http://localhost:9200
-FRONTEND_URL=http://localhost:3000
-BACKEND_URL=http://localhost:5000
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
-SLACK_CLIENT_ID=your-slack-client-id
-SLACK_CLIENT_SECRET=your-slack-client-secret
-SLACK_REDIRECT_URI=http://localhost:5000/api/slack/callback
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin
-```
-
-### Frontend Environment Variables (`frontend/.env`)
-```env
-VITE_API_URL=http://localhost:5000
-```
-
----
-
-## 6. Key Technical Implementations
-
-### Rate Limiting Algorithm (Redis Atomic Counter)
-
-The distributed rate limiter tracks dispatches per sender per hour using Redis atomic keys:
-
-1. **Key Format**: `rate-limit:{senderId}:{YYYY-MM-DD-HH}`
-2. **Atomic Increment**: Before sending, worker executes `redis.incr(key)`.
-3. **Expiration**: On first increment, TTL is set to 7200 seconds (`EXPIRE key 7200`).
-4. **Limit Enforced**: If count exceeds `hourlyLimit`:
-   - Counter is rolled back (`redis.decr(key)`).
-   - MySQL record status updates to `RESCHEDULED` with `scheduledAt` set to top of next UTC hour.
-   - BullMQ enqueues new delayed job targeting top of next hour.
-   - Slack notification is triggered automatically.
-
-### Idempotency & Duplicate Prevention
-
-- A unique constraint is enforced in MySQL on `idempotencyKey`: `md5(campaignId + ":" + recipient + ":" + index)`.
-- Before sending, worker queries MySQL. If status is already `SENT` or `PROCESSING`, the job is completed without sending again.
-
-### Restart Recovery & State Persistence
-
-- **MySQL is the single source of truth**.
-- If the server or worker crashes mid-batch, completed emails remain marked as `SENT` in MySQL. Pending emails remain `SCHEDULED` and resume processing automatically upon worker restart.
+### Frontend Features
+- **Design System**: Complete implementation of Outbox Dark Navy design spec (`Stitch UI`) built with Tailwind CSS.
+- **Authentication Pages**:
+  - **Login Page**: Split-panel design supporting Email + Password, Google OAuth, and Instant Demo login.
+  - **Signup Page**: Registration form with password validation and OAuth support.
+- **Dashboard Page**:
+  - Summary stats cards (Scheduled, Sent, Failed, Active Senders).
+  - Controls bar with live search input, Status filter (`Scheduled`, `Processing`, `Sent`, `Failed`), and Date filter (`Today`, `Tomorrow`, `Upcoming`).
+  - View switcher tabs (`Scheduled Queue`, `Sent History`, `Search Results`).
+- **Compose Email Page**:
+  - Drag-and-drop CSV file uploader (`papaparse`) with email validation and recipient count preview.
+  - Manual recipient fallback input.
+  - Rich text formatting editor toolbar.
+  - Sticky Email Summary card calculating real-time dispatch parameters.
+  - Dispatch controls for start time, minimum delay, and hourly rate limits.
+- **Data Tables & Modals**:
+  - Interactive tables with hover states, uppercase headers, and status badges.
+  - Detail inspection modal displaying full email headers, body content, and clickable Ethereal SMTP web preview links.
+- **Sidebar & Shell Navigation**:
+  - Fixed sidebar (`w-60`) with dynamic counter badges for pending, sent, and failed dispatches.
+  - Direct links to Compose, Dashboard, Slack integration toggle, and external Bull Board dashboard.
 
 ---
 
-## 7. Known Hosting Network Limitation (Render Free Egress Policy)
+## 6. Automated Testing
 
-> [!NOTE] Ethereal SMTP Outbound Port Restriction
-> Render's Free Web Service tier enforces a strict egress firewall policy blocking outbound TCP ports **25**, **465**, and **587** to prevent spam abuse on free instances.
->
-> - **Local Development**: In local development, port `587` is unblocked. BullMQ workers process scheduled jobs, connect to `smtp.ethereal.email:587`, dispatch emails successfully, and generate viewable Ethereal preview URLs.
-> - **Production (Render Free)**: On Render Free, outbound connections to `smtp.ethereal.email:587` hit an `ETIMEDOUT` socket timeout. The BullMQ worker catches the timeout safely, preserves server startup & queue operation, and marks the record status in MySQL as `FAILED` with the diagnostic details.
-> - **Production Resolution**: Deploying the backend to an unblocked host or upgrading the Render instance to a paid Web Service tier immediately enables live Ethereal SMTP delivery and preview URL generation in production.
-
----
-
-## 8. API Documentation
-
-### Auth Endpoints
-- `POST /api/auth/signup` — Create user account with name, email, and password.
-- `POST /api/auth/login` — Log in with email and password.
-- `POST /api/auth/demo-login` — Instant test login (returns JWT token & sets HttpOnly cookie).
-- `GET /api/auth/google` — Initiates Google OAuth flow.
-- `GET /api/auth/me` — Fetches current authenticated user profile.
-- `POST /api/auth/logout` — Clears authentication cookies.
-
-### Scheduling & Email Endpoints
-- `POST /api/emails/schedule` — Schedule email campaign.
-  ```json
-  {
-    "name": "Q4 Welcome Sequence",
-    "recipients": ["user1@example.com", "user2@example.com"],
-    "subject": "Welcome to Outbox",
-    "body": "Hello world!",
-    "startTime": "2026-09-22T19:00:00.000Z",
-    "delaySeconds": 2,
-    "hourlyLimit": 100
-  }
-  ```
-- `GET /api/emails/scheduled` — Fetch pending/rescheduled emails.
-- `GET /api/emails/sent` — Fetch sent email history with Ethereal preview URLs.
-- `GET /api/emails/search?q=query` — Fast multi-field search powered by Elasticsearch.
-
-### Slack Endpoints
-- `POST /api/slack/connect` — Returns Slack OAuth URL.
-- `GET /api/slack/status` — Checks Slack connection state.
-
-### Infrastructure & Health
-- `GET /api/health` — Checks MySQL, Redis, and Elasticsearch status.
-- `GET /admin/queues` — Interactive Bull Board queue monitor.
-
----
-
-## 9. Automated Testing
-
-Run backend Jest test suite covering scheduling, rate limiting, idempotency, and authentication:
+Run the backend Jest test suite covering scheduling, rate limiting, idempotency, and authentication:
 
 ```bash
 cd backend
