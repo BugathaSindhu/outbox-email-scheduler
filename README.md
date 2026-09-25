@@ -109,34 +109,46 @@ Outbox uses **Nodemailer** paired with **Ethereal SMTP** (`smtp.ethereal.email`)
 
 #### Backend Environment Variables (`backend/.env`)
 ```env
+# Server Config
 PORT=5000
 NODE_ENV=development
-JWT_SECRET=super-secret-outbox-jwt-key
-FRONTEND_URL=http://localhost:3000
+JWT_SECRET=super-secret-outbox-jwt-key-2026
+
+ADMIN_DASHBOARD_USER=admin
+ADMIN_DASHBOARD_PASSWORD=Sindhu@2005
+
+# URLs
 BACKEND_URL=http://localhost:5000
+FRONTEND_URL=http://localhost:3000
 
-# Database & Cache Connection Strings
-DATABASE_URL="mysql://root:password@localhost:3306/outbox"
-REDIS_URL="redis://localhost:6379"
-ELASTICSEARCH_URL="http://localhost:9200"
+# Databases
+DATABASE_URL="mysql://avnadmin:AVNS_4fcd_Np1ZrdIteuTc_k@outbox-mysql-bugathasindhu-89ec.f.aivencloud.com:16896/defaultdb?ssl-mode=REQUIRED"
+REDIS_URL="rediss://default:gQAAAAAABH8HAAIgcDIyMzdjNzQwNmYzYTk0Yzk1YTRmMDE0M2NjM2ZkNThjMQ@thankful-chipmunk-294663.upstash.io:6379"
 
-# Ethereal SMTP Credentials (Optional - Auto-created if empty)
+# Elasticsearch
+ELASTICSEARCH_URL=https://my-elasticsearch-project-d1f0a3.es.asia-south1.gcp.elastic.cloud:443
+ELASTICSEARCH_API_KEY=LXBOQXo2QUJVaGpRd1pUY0l5SjE6U3kxLXR5QVQ0djRYeE52NDNzTGVqQQ==
+
+# Nodemailer / Ethereal SMTP
+ETHEREAL_HOST=smtp.ethereal.email
+ETHEREAL_PORT=587
 ETHEREAL_USER=
-ETHEREAL_PASS=
+ETHEREAL_PASSWORD=
 
-# Google OAuth Credentials
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
+# Google OAuth
+GOOGLE_CLIENT_ID=362372395714-q71rq44bom4tmjd36ir0s01b3f0ul1ip.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
 GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
 
-# Slack OAuth Integration
-SLACK_CLIENT_ID=your-slack-client-id
-SLACK_CLIENT_SECRET=your-slack-client-secret
+# Slack OAuth
+SLACK_CLIENT_ID=12127587352321.12134218221377
+SLACK_CLIENT_SECRET=a86a7c10f23d8a8db5ca757c561a024e
 SLACK_REDIRECT_URI=http://localhost:5000/api/slack/callback
 
-# Bull Board Dashboard Credentials
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin
+# Worker Configuration
+WORKER_CONCURRENCY=5
+DEFAULT_EMAIL_DELAY_SECONDS=2
+DEFAULT_HOURLY_LIMIT=100
 ```
 
 #### Frontend Environment Variables (`frontend/.env`)
