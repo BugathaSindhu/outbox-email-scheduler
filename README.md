@@ -122,12 +122,12 @@ BACKEND_URL=http://localhost:5000
 FRONTEND_URL=http://localhost:3000
 
 # Databases
-DATABASE_URL="mysql://avnadmin:AVNS_4fcd_Np1ZrdIteuTc_k@outbox-mysql-bugathasindhu-89ec.f.aivencloud.com:16896/defaultdb?ssl-mode=REQUIRED"
-REDIS_URL="rediss://default:gQAAAAAABH8HAAIgcDIyMzdjNzQwNmYzYTk0Yzk1YTRmMDE0M2NjM2ZkNThjMQ@thankful-chipmunk-294663.upstash.io:6379"
+DATABASE_URL=
+REDIS_URL=
 
 # Elasticsearch
-ELASTICSEARCH_URL=https://my-elasticsearch-project-d1f0a3.es.asia-south1.gcp.elastic.cloud:443
-ELASTICSEARCH_API_KEY=LXBOQXo2QUJVaGpRd1pUY0l5SjE6U3kxLXR5QVQ0djRYeE52NDNzTGVqQQ==
+ELASTICSEARCH_URL=
+ELASTICSEARCH_API_KEY=
 
 # Nodemailer / Ethereal SMTP
 ETHEREAL_HOST=smtp.ethereal.email
@@ -136,14 +136,14 @@ ETHEREAL_USER=
 ETHEREAL_PASSWORD=
 
 # Google OAuth
-GOOGLE_CLIENT_ID=362372395714-q71rq44bom4tmjd36ir0s01b3f0ul1ip.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=
 
 # Slack OAuth
-SLACK_CLIENT_ID=12127587352321.12134218221377
-SLACK_CLIENT_SECRET=a86a7c10f23d8a8db5ca757c561a024e
-SLACK_REDIRECT_URI=http://localhost:5000/api/slack/callback
+SLACK_CLIENT_ID=
+SLACK_CLIENT_SECRET=
+SLACK_REDIRECT_URI=
 
 # Worker Configuration
 WORKER_CONCURRENCY=5
